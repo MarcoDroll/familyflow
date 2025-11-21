@@ -2,29 +2,29 @@ version: '3.8'
 
 services:
   backend:
-    image: ghcr.io/marcodroll/familyflow-backend:latest
-    container_name: familyflow-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: famplan-backend
     environment:
       PORT: 3000
       NODE_ENV: production
     volumes:
       - sqlite_data:/app/data
-    networks:
-      - familyflow-network
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/marcodroll/familyflow-frontend:latest
-    container_name: familyflow-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: famplan-frontend
     depends_on:
       - backend
-    networks:
-      - familyflow-network
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
-    container_name: familyflow-nginx
+    container_name: famplan-nginx
     ports:
       - "80:80"
     volumes:
@@ -32,14 +32,7 @@ services:
     depends_on:
       - frontend
       - backend
-    networks:
-      - familyflow-network
     restart: unless-stopped
 
 volumes:
   sqlite_data:
-    name: familyflow_sqlite
-
-networks:
-  familyflow-network:
-    driver: bridge

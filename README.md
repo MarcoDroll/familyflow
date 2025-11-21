@@ -1,23 +1,72 @@
-# FamPlan - Familienaufgabenplaner
+# FamilyFlow - Family Task Planning Board
 
-Eine selbst gehostete Webanwendung zum Verwalten von Aufgaben für Kinder mit Kanban-Board und Wiederholungsfunktion.
+A self-hosted web application for managing children's tasks with Kanban boards and automatic recurring tasks.
 
-## Features
+[![Build and Push Docker Images](https://github.com/MarcoDroll/familyflow/actions/workflows/docker-build.yml/badge.svg)](https://github.com/MarcoDroll/familyflow/actions/workflows/docker-build.yml)
 
-- 🎯 **Kanban Board** mit drei Spalten: "Zu erledigen", "Mach ich gerade", "Erledigt"
-- 👨‍👩‍👧‍👦 **Mehrere Kinder** - Jedes Kind hat sein eigenes Board
-- 🔄 **Automatische Wiederholungen** - Aufgaben können täglich, wöchentlich, monatlich oder an einem bestimmten Datum zurückgesetzt werden
-- 👥 **Eltern-Dashboard** - Zentrale Verwaltung aller Kinder und Aufgaben
-- 🐳 **Docker-ready** - Einfache Bereitstellung mit Docker Compose
-- 🇩🇪 **Deutsche Benutzeroberfläche**
+## ✨ Features
 
-## Technologie-Stack
+- 🎯 **Kanban Board** with three columns: "To Do", "Doing", "Done"
+- 👨‍👩‍👧‍👦 **Multiple Children** - Each child has their own board
+- 🔄 **Automatic Recurring Tasks** - Daily, weekly, monthly, or specific date
+- 🔒 **PIN-Protected Parent Dashboard** - Secure admin access (default PIN: 8956)
+- 🎨 **Modern Dark Theme** - Beautiful UI with teal accents and Manrope font
+- 🐳 **Docker Ready** - Pre-built images with semantic versioning
+- 📦 **GitHub Actions** - Automated builds on every release
+- 🇩🇪 **German Interface**
 
-- **Frontend**: Angular 17 mit TypeScript
-- **Backend**: Node.js mit Express und TypeScript
-- **Datenbank**: PostgreSQL
+## 🚀 Quick Start
+
+### Deploy on Asustor NAS with Portainer
+
+```bash
+# In Portainer: Stacks → Add Stack → Repository
+Repository URL: https://github.com/MarcoDroll/familyflow
+Compose path: docker-compose.yml
+```
+
+**Or via command line:**
+```bash
+wget https://raw.githubusercontent.com/MarcoDroll/familyflow/main/docker-compose.yml
+docker-compose up -d
+```
+
+Access at: `http://your-nas-ip`
+PIN: `8956`
+
+📖 **Full deployment guide**: See [DEPLOYMENT.md](DEPLOYMENT.md)
+
+## 📦 Pre-built Images
+
+Docker images are automatically built via GitHub Actions and published to GitHub Container Registry:
+
+- **Backend**: `ghcr.io/marcodroll/familyflow-backend:latest`
+- **Frontend**: `ghcr.io/marcodroll/familyflow-frontend:latest`
+
+### Creating a New Release
+
+```bash
+# Tag a new version (semantic versioning)
+git tag v1.0.0
+git push origin v1.0.0
+
+# GitHub Actions will automatically:
+# ✅ Build Docker images
+# ✅ Push to ghcr.io
+# ✅ Tag as version and 'latest'
+```
+
+View builds: [GitHub Actions](https://github.com/MarcoDroll/familyflow/actions)
+
+## 🛠️ Technology Stack
+
+- **Frontend**: Angular 18 with TypeScript, standalone components
+- **Backend**: Node.js with Express and TypeScript
+- **Database**: SQLite (persistent volume)
 - **Reverse Proxy**: Nginx
-- **Containerisierung**: Docker & Docker Compose
+- **CI/CD**: GitHub Actions
+- **Container Registry**: GitHub Container Registry (ghcr.io)
+- **Containerization**: Docker & Docker Compose
 
 ## Voraussetzungen
 
