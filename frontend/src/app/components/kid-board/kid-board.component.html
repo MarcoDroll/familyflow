@@ -1,0 +1,49 @@
+<div class="board-shell" *ngIf="kid">
+  <header class="board-head">
+    <button class="chip" (click)="backToDashboard()">← Zur Übersicht</button>
+    <div>
+      <p class="eyebrow">Board</p>
+      <h1>{{ kid.name }}</h1>
+      <p class="muted">
+        Ziehe Karten zwischen Spalten, um den Status zu aktualisieren.
+      </p>
+    </div>
+    <div class="status-pill">
+      <span class="dot"></span>
+      {{ getOpenTasksCount() }} offen
+    </div>
+  </header>
+
+  <section class="board-grid">
+    <div
+      class="lane"
+      *ngFor="let status of statusColumns"
+      [ngClass]="getColumnClass(status)"
+      (dragover)="onDragOver($event)"
+      (drop)="onDrop($event, status)"
+    >
+      <div class="lane-head">
+        <div>
+          <p class="eyebrow">Spalte</p>
+          <h2>{{ statusLabels[status] }}</h2>
+        </div>
+        <span class="badge">{{ (tasksByStatus.get(status) || []).length }}</span>
+      </div>
+
+      <div class="tasks">
+        <div *ngIf="(tasksByStatus.get(status) || []).length === 0" class="empty">
+          Noch nichts hier.
+        </div>
+        <app-task-card
+          *ngFor="let task of tasksByStatus.get(status)"
+          [task]="task"
+          (dragstart)="onDragStart($event, task)"
+        ></app-task-card>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="loading" *ngIf="!kid">
+  <p>Lädt...</p>
+</div>

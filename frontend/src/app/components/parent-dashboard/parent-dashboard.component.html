@@ -1,0 +1,225 @@
+<div class="dashboard">
+  <header class="dashboard-header">
+    <h1>Eltern-Dashboard</h1>
+    <button class="btn btn-primary" (click)="openKidDialog()">+ Kind hinzufügen</button>
+  </header>
+
+  <!-- Statistik-Übersicht -->
+  <div class="stats-overview" *ngIf="kidStats.length > 0">
+    <div class="stats-header">
+      <h2>Aufgaben-Übersicht</h2>
+      <button class="toggle-btn" (click)="toggleStats()" [title]="statsCollapsed ? 'Erweitern' : 'Einklappen'">
+        {{ statsCollapsed ? '▼' : '▲' }}
+      </button>
+    </div>
+    <div class="stats-grid" *ngIf="!statsCollapsed">
+      <div class="stat-card" *ngFor="let stat of kidStats">
+        <div class="stat-header">
+          <div class="stat-kid-color" [style.background-color]="stat.kid.color"></div>
+          <h3>{{ stat.kid.name }}</h3>
+        </div>
+
+        <div class="stat-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="stat.completionRate" [style.background-color]="stat.kid.color"></div>
+          </div>
+          <span class="progress-text">{{ stat.completionRate }}% erledigt</span>
+        </div>
+
+        <div class="stat-details">
+          <div class="stat-item todo">
+            <span class="stat-label">Zu erledigen:</span>
+            <span class="stat-value">{{ stat.zuErledigen }}</span>
+          </div>
+          <div class="stat-item doing">
+            <span class="stat-label">In Arbeit:</span>
+            <span class="stat-value">{{ stat.machIchGerade }}</span>
+          </div>
+          <div class="stat-item done">
+            <span class="stat-label">Erledigt:</span>
+            <span class="stat-value">{{ stat.erledigt }}</span>
+          </div>
+        </div>
+
+        <div class="stat-total">
+          Gesamt: {{ stat.totalTasks }} Aufgaben
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <aside class="kids-sidebar">
+      <h2>Kinder</h2>
+      <div class="kids-list">
+        <div
+          *ngFor="let kid of kids"
+          class="kid-item"
+          [class.active]="selectedKid?.id === kid.id"
+          (click)="selectKid(kid)"
+        >
+          <div class="kid-info">
+            <div class="kid-color" [style.background-color]="kid.color"></div>
+            <span class="kid-name">{{ kid.name }}</span>
+          </div>
+          <div class="kid-actions">
+            <button class="btn-icon" (click)="viewKidBoard(kid); $event.stopPropagation()" title="Board anzeigen">
+              👁️
+            </button>
+            <button class="btn-icon" (click)="openKidDialog(kid); $event.stopPropagation()" title="Bearbeiten">
+              ✏️
+            </button>
+            <button class="btn-icon" (click)="deleteKid(kid); $event.stopPropagation()" title="Löschen">
+              🗑️
+            </button>
+          </div>
+        </div>
+        <div *ngIf="kids.length === 0" class="empty-message">
+          Noch keine Kinder hinzugefügt
+        </div>
+      </div>
+    </aside>
+
+    <main class="tasks-main">
+      <div *ngIf="selectedKid" class="tasks-section">
+        <div class="section-header">
+          <h2>Aufgaben für {{ selectedKid.name }}</h2>
+          <button class="btn btn-primary" (click)="openTaskDialog()">+ Aufgabe hinzufügen</button>
+        </div>
+
+        <div class="tasks-table">
+          <table *ngIf="tasks.length > 0">
+            <thead>
+              <tr>
+                <th>Titel</th>
+                <th>Beschreibung</th>
+                <th>Status</th>
+                <th>Wiederholung</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let task of tasks">
+                <td>{{ task.title }}</td>
+                <td>{{ task.description || '-' }}</td>
+                <td>
+                  <span class="status-badge" [class]="'status-' + task.status">
+                    {{ statusLabels[task.status] }}
+                  </span>
+                </td>
+                <td>
+                  <span *ngIf="task.recurrence_type !== 'none'">
+                    {{ recurrenceLabels[task.recurrence_type] }}
+                    <span *ngIf="task.recurrence_type === 'specific_date' && task.recurrence_date">
+                      ({{ task.recurrence_date | date:'dd.MM.yyyy' }})
+                    </span>
+                  </span>
+                  <span *ngIf="task.recurrence_type === 'none'">-</span>
+                </td>
+                <td>
+                  <button class="btn-icon" (click)="openTaskDialog(task)" title="Bearbeiten">✏️</button>
+                  <button class="btn-icon" (click)="deleteTask(task)" title="Löschen">🗑️</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="tasks.length === 0" class="empty-message">
+            Noch keine Aufgaben für dieses Kind
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedKid && kids.length > 0" class="empty-message">
+        Wählen Sie ein Kind aus, um dessen Aufgaben zu sehen
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Kid Dialog -->
+<div class="modal" *ngIf="showKidDialog" (click)="closeKidDialog()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>{{ kidForm.id ? 'Kind bearbeiten' : 'Kind hinzufügen' }}</h2>
+    <form (ngSubmit)="saveKid()">
+      <div class="form-group">
+        <label for="kidName">Name</label>
+        <input
+          type="text"
+          id="kidName"
+          [(ngModel)]="kidForm.name"
+          name="name"
+          required
+          placeholder="Name des Kindes"
+        />
+      </div>
+      <div class="form-group">
+        <label for="kidColor">Farbe</label>
+        <input
+          type="color"
+          id="kidColor"
+          [(ngModel)]="kidForm.color"
+          name="color"
+        />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeKidDialog()">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Task Dialog -->
+<div class="modal" *ngIf="showTaskDialog" (click)="closeTaskDialog()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h2>{{ taskForm.id ? 'Aufgabe bearbeiten' : 'Aufgabe hinzufügen' }}</h2>
+    <form (ngSubmit)="saveTask()">
+      <div class="form-group">
+        <label for="taskTitle">Titel</label>
+        <input
+          type="text"
+          id="taskTitle"
+          [(ngModel)]="taskForm.title"
+          name="title"
+          required
+          placeholder="Aufgabentitel"
+        />
+      </div>
+      <div class="form-group">
+        <label for="taskDescription">Beschreibung</label>
+        <textarea
+          id="taskDescription"
+          [(ngModel)]="taskForm.description"
+          name="description"
+          rows="3"
+          placeholder="Beschreibung (optional)"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label for="taskRecurrence">Wiederholung</label>
+        <select
+          id="taskRecurrence"
+          [(ngModel)]="taskForm.recurrence_type"
+          name="recurrence_type"
+        >
+          <option *ngFor="let type of getRecurrenceTypes()" [value]="type">
+            {{ recurrenceLabels[type] }}
+          </option>
+        </select>
+      </div>
+      <div class="form-group" *ngIf="taskForm.recurrence_type === 'specific_date'">
+        <label for="taskDate">Datum</label>
+        <input
+          type="date"
+          id="taskDate"
+          [(ngModel)]="taskForm.recurrence_date"
+          name="recurrence_date"
+        />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeTaskDialog()">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>

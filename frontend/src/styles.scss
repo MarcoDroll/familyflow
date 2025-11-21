@@ -1,0 +1,25 @@
+/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: radial-gradient(circle at 5% 20%, rgba(61, 217, 168, 0.15), transparent 22%),
+    radial-gradient(circle at 90% 0%, rgba(14, 165, 233, 0.25), transparent 24%),
+    linear-gradient(165deg, #050915, #0a1222 45%, #0b1326);
+  color: #e5edff;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+}

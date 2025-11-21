@@ -1,0 +1,58 @@
+<div class="hero">
+  <div class="hero__copy">
+    <p class="eyebrow">Familien-Planer</p>
+    <h1>Wähle dein Board</h1>
+    <p class="lede">
+      Jedes Kind hat sein eigenes Kanban-Board. Aufgaben wandern von
+      <strong>„Zu erledigen"</strong> über <strong>„Mach ich gerade"</strong>
+      zu <strong>„Erledigt"</strong>.
+    </p>
+  </div>
+  <div class="hero__stats">
+    <div class="stat-card">
+      <p class="label">Kinder</p>
+      <p class="value">{{ kids.length }}</p>
+      <p class="hint">eigene Boards</p>
+    </div>
+    <div class="stat-card" (click)="openPinDialog()" style="cursor: pointer;">
+      <p class="label">Eltern</p>
+      <p class="value">🔒</p>
+      <p class="hint">Dashboard</p>
+    </div>
+  </div>
+</div>
+
+<section class="kids">
+  <div class="section-head">
+    <div>
+      <p class="eyebrow">Boards</p>
+      <h2>Wähle ein Kind</h2>
+    </div>
+  </div>
+
+  <div class="kid-grid">
+    <div *ngIf="kids.length === 0" class="empty card">
+      <p>Noch keine Kinder angelegt. Gehe zum Eltern-Dashboard, um Kinder hinzuzufügen.</p>
+    </div>
+
+    <article *ngFor="let kid of kids" class="kid-card card" (click)="goToKidBoard(kid.id)">
+      <header>
+        <div class="avatar" [style.background-color]="kid.color">{{ kid.name.slice(0, 2).toUpperCase() }}</div>
+        <div>
+          <p class="eyebrow">Board</p>
+          <h3>{{ kid.name }}</h3>
+        </div>
+      </header>
+      <footer>
+        <button class="btn ghost">Board öffnen</button>
+      </footer>
+    </article>
+  </div>
+</section>
+
+<!-- PIN Dialog -->
+<app-pin-entry
+  *ngIf="showPinDialog"
+  (onClose)="closePinDialog()"
+  (onSuccess)="onPinSuccess()"
+></app-pin-entry>

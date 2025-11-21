@@ -1,0 +1,11 @@
+<div class="task-card" draggable="true">
+  <div class="task-content">
+    <h3 class="task-title">{{ task.title }}</h3>
+    <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+  </div>
+  <div class="task-meta" *ngIf="task.recurrence_type !== 'none'">
+    <span class="recurrence-badge">
+      🔄 {{ getRecurrenceInfo() }}
+    </span>
+  </div>
+</div>

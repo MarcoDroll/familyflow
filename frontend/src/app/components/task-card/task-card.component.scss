@@ -1,0 +1,56 @@
+.task-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.85rem;
+  cursor: move;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    border-color: rgba(61, 217, 168, 0.3);
+  }
+
+  &:active {
+    cursor: grabbing;
+    opacity: 0.8;
+  }
+}
+
+.task-content {
+  margin-bottom: 0.5rem;
+
+  .task-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f7fafc;
+    line-height: 1.4;
+  }
+
+  .task-description {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #b3bed5;
+    line-height: 1.4;
+  }
+}
+
+.task-meta {
+  display: flex;
+  justify-content: flex-end;
+
+  .recurrence-badge {
+    font-size: 0.75rem;
+    color: #c8d6eb;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+}

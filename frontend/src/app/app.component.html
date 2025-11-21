@@ -1,0 +1,18 @@
+<div class="app-frame">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">FP</span>
+      <div>
+        <p class="eyebrow">Family Flow</p>
+        <strong>Taskboard</strong>
+      </div>
+    </div>
+    <nav>
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Übersicht</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <router-outlet />
+  </main>
+</div>
