@@ -24,7 +24,7 @@ services:
     image: nginx:alpine
     container_name: familyflow-nginx
     ports:
-      - "80:80"
+      - "8044:80"
     configs:
       - source: nginx_config
         target: /etc/nginx/nginx.conf
