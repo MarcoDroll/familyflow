@@ -29,9 +29,9 @@ RUN mkdir -p /app/backend /var/www/html /data
 # Copy and build backend
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --only=production --ignore-scripts
+RUN npm ci --ignore-scripts
 COPY backend/ ./
-RUN npm run build
+RUN npm run build && npm prune --production
 
 # Copy and build frontend
 WORKDIR /tmp/frontend
