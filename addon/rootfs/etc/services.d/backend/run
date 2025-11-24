@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start the backend service
+# ==============================================================================
+
+bashio::log.info "Starting FamilyFlow backend..."
+
+# Set environment variables
+export PORT=3000
+export NODE_ENV=production
+export DATA_DIR=/data
+
+cd /app/backend
+
+exec node dist/index.js
