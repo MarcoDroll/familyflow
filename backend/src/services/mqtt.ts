@@ -7,6 +7,7 @@ interface MqttConfig {
   port: number;
   username?: string;
   password?: string;
+  ssl?: boolean;
 }
 
 interface TaskStats {
@@ -19,10 +20,13 @@ interface TaskStats {
 interface SupervisorMqttResponse {
   result: string;
   data: {
+    addon: string;
     host: string;
-    port: number;
-    username?: string;
-    password?: string;
+    port: string | number;
+    ssl: boolean;
+    username: string;
+    password: string;
+    protocol: string;
   };
 }
 
@@ -34,7 +38,7 @@ class MqttService {
   private isConnected = false;
 
   async initialize(): Promise<void> {
-    // Try to get MQTT config from environment or HA Supervisor
+    console.log('MQTT: Initializing service...');
     this.config = await this.getMqttConfig();
 
     if (!this.config) {
@@ -46,40 +50,57 @@ class MqttService {
   }
 
   private async getMqttConfig(): Promise<MqttConfig | null> {
-    // First, check environment variables
+    // Check environment variables first (for local development)
     if (process.env.MQTT_HOST) {
+      console.log('MQTT: Using environment variables');
       return {
         host: process.env.MQTT_HOST,
         port: parseInt(process.env.MQTT_PORT || '1883'),
         username: process.env.MQTT_USERNAME,
         password: process.env.MQTT_PASSWORD,
+        ssl: process.env.MQTT_SSL === 'true',
       };
     }
 
     // Try to discover MQTT from Home Assistant Supervisor API
     const supervisorToken = process.env.SUPERVISOR_TOKEN;
+    console.log('MQTT: SUPERVISOR_TOKEN present:', !!supervisorToken);
+
     if (supervisorToken) {
       try {
+        console.log('MQTT: Querying Supervisor API...');
         const response = await fetch('http://supervisor/services/mqtt', {
           headers: {
-            'Authorization': `Bearer ${supervisorToken}`,
+            'Authorization': 'Bearer ' + supervisorToken,
           },
         });
 
+        console.log('MQTT: Response status:', response.status);
+
         if (response.ok) {
-          const data = await response.json() as SupervisorMqttResponse;
-          if (data.data && data.data.host) {
-            console.log('MQTT: Discovered broker via Supervisor API');
+          const json = await response.json() as SupervisorMqttResponse;
+          console.log('MQTT: Response result:', json.result);
+
+          if (json.data && json.data.host) {
+            const port = typeof json.data.port === 'string'
+              ? parseInt(json.data.port)
+              : (json.data.port || 1883);
+            console.log('MQTT: Found broker at', json.data.host + ':' + port);
             return {
-              host: data.data.host,
-              port: data.data.port || 1883,
-              username: data.data.username,
-              password: data.data.password,
+              host: json.data.host,
+              port: port,
+              username: json.data.username,
+              password: json.data.password,
+              ssl: json.data.ssl,
             };
+          } else {
+            console.log('MQTT: No service data (Mosquitto not installed?)');
           }
+        } else {
+          console.log('MQTT: API returned status', response.status);
         }
       } catch (error) {
-        console.log('MQTT: Could not discover broker via Supervisor:', error);
+        console.error('MQTT: Error:', error);
       }
     }
 
@@ -89,13 +110,15 @@ class MqttService {
   private async connect(): Promise<void> {
     if (!this.config) return;
 
-    const url = `mqtt://${this.config.host}:${this.config.port}`;
+    const protocol = this.config.ssl ? 'mqtts' : 'mqtt';
+    const url = protocol + '://' + this.config.host + ':' + this.config.port;
 
     const options: mqtt.IClientOptions = {
-      clientId: `familyflow_${Date.now()}`,
+      clientId: 'familyflow_' + Date.now(),
       clean: true,
       connectTimeout: 30000,
       reconnectPeriod: 5000,
+      rejectUnauthorized: false,
     };
 
     if (this.config.username) {
@@ -103,12 +126,12 @@ class MqttService {
       options.password = this.config.password;
     }
 
-    console.log(`MQTT: Connecting to ${url}...`);
+    console.log('MQTT: Connecting to', url, 'as', this.config.username || 'anonymous');
 
     this.client = mqtt.connect(url, options);
 
     this.client.on('connect', async () => {
-      console.log('MQTT: Connected to broker');
+      console.log('MQTT: Connected successfully!');
       this.isConnected = true;
 
       // Publish discovery configs for all kids
