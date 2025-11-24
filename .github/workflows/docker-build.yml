@@ -8,16 +8,6 @@ on:
       - '**.md'
       - 'public-addon/**'
   workflow_dispatch:
-    inputs:
-      version_bump:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
 
 env:
   REGISTRY: ghcr.io
@@ -27,54 +17,20 @@ env:
 
 jobs:
   version:
-    name: Determine Version
+    name: Get Version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.bump.outputs.version }}
-      previous: ${{ steps.current.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - name: Checkout addon repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          repository: ${{ env.ADDON_REPO }}
-          token: ${{ secrets.PUPLIC_REPO_TOKEN }}
-          path: addon-repo
 
-      - name: Get current version
-        id: current
+      - name: Read version from VERSION file
+        id: version
         run: |
-          VERSION=$(grep '^version:' addon-repo/familyflow/config.yaml | sed 's/version: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+          VERSION=$(cat VERSION | tr -d '[:space:]')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
-
-      - name: Bump version
-        id: bump
-        run: |
-          CURRENT="${{ steps.current.outputs.version }}"
-          BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
-
-          # Parse version
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
-
-          # Bump based on type
-          case $BUMP_TYPE in
-            major)
-              MAJOR=$((MAJOR + 1))
-              MINOR=0
-              PATCH=0
-              ;;
-            minor)
-              MINOR=$((MINOR + 1))
-              PATCH=0
-              ;;
-            patch)
-              PATCH=$((PATCH + 1))
-              ;;
-          esac
-
-          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Bumped version: $CURRENT -> $NEW_VERSION ($BUMP_TYPE)"
+          echo "Building version: $VERSION"
 
   build-and-push:
     name: Build Docker Images
@@ -213,22 +169,31 @@ jobs:
           DATE=$(date +%Y-%m-%d)
           VERSION="${{ needs.version.outputs.version }}"
 
-          # Create new changelog entry
-          ENTRY="## [$VERSION] - $DATE\n\n### Changed\n\n- Automated release\n"
-
-          # Insert after the header line
-          sed -i "/^# Changelog/a\\
+          # Check if version already exists in changelog
+          if grep -q "## \[$VERSION\]" familyflow/CHANGELOG.md; then
+            echo "Version $VERSION already in changelog, skipping"
+          else
+            # Create new changelog entry
+            ENTRY="## [$VERSION] - $DATE\n\n### Changed\n\n- Automated release\n"
+            sed -i "/^# Changelog/a\\
 \\
 $ENTRY" familyflow/CHANGELOG.md
+          fi
 
       - name: Commit and push changes
         run: |
           cd addon-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add familyflow/config.yaml familyflow/CHANGELOG.md
-          git commit -m "Release v${{ needs.version.outputs.version }}"
-          git push
+
+          # Only commit if there are changes
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add familyflow/config.yaml familyflow/CHANGELOG.md
+            git commit -m "Release v${{ needs.version.outputs.version }}"
+            git push
+          fi
 
       - name: Create build summary
         run: |

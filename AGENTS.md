@@ -2,15 +2,20 @@
 
 ## Quick Reference
 
-### Automated Releases
+### Releases
 
-Releases are fully automated. Just push to `main` and the workflow will:
-1. Auto-increment patch version (1.0.5 → 1.0.6)
-2. Build and tag all Docker images
-3. Update `config.yaml` in addon repo
-4. Add changelog entry and push addon repo
+Version is controlled by the `VERSION` file in the main repo root.
 
-For manual version control, use workflow_dispatch with version_bump option (patch/minor/major).
+To release:
+1. Update `VERSION` file with new semantic version (e.g., `1.0.7`)
+2. Push to `main`
+
+The workflow will automatically:
+- Build and tag all Docker images with that version
+- Update `config.yaml` in addon repo
+- Add changelog entry and push addon repo
+
+**Required secret:** `PUPLIC_REPO_TOKEN` - PAT with repo access to push to familyflow-addon.
 
 ### File Editing Notes
 
@@ -73,7 +78,7 @@ cd frontend && npm install && ./node_modules/.bin/ng build
 
 The `public-addon/` directory is the addon repo included as a subdirectory (not a git submodule).
 
-**Key insight:** GitHub Actions workflow in main repo automatically handles versioning. It reads current version from addon repo's config.yaml, increments it, builds images, then updates the addon repo.
+**Key insight:** Version is controlled by the `VERSION` file in the main repo. The workflow reads it, builds images with that version, then syncs to the addon repo.
 
 ## MQTT Entity Structure
 
