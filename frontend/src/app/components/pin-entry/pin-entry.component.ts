@@ -15,8 +15,8 @@ export class PinEntryComponent {
 
   pin = '';
   error = false;
-  // Default PIN is "8956" - in production, this should be stored securely
-  private readonly correctPin = '8956';
+  // Default PIN is "8966" - in production, this should be stored securely
+  private readonly correctPin = '8966';
 
   enterDigit(digit: string): void {
     if (this.pin.length < 4) {
