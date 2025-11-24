@@ -4,16 +4,14 @@
 
 ### Releases
 
-Version is controlled by the `VERSION` file in the main repo root.
+Releases are fully automated. Just push code to `main` and the workflow will:
+1. Auto-increment patch version (e.g., 1.0.6 → 1.0.7)
+2. Commit updated `VERSION` file to main repo
+3. Build and tag all Docker images
+4. Update `config.yaml` in addon repo
+5. Add changelog entry and push addon repo
 
-To release:
-1. Update `VERSION` file with new semantic version (e.g., `1.0.7`)
-2. Push to `main`
-
-The workflow will automatically:
-- Build and tag all Docker images with that version
-- Update `config.yaml` in addon repo
-- Add changelog entry and push addon repo
+For minor/major bumps, use **workflow_dispatch** with version_bump option.
 
 **Required secret:** `PUPLIC_REPO_TOKEN` - PAT with repo access to push to familyflow-addon.
 
