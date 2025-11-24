@@ -2,16 +2,15 @@
 
 ## Quick Reference
 
-### Release Checklist
+### Automated Releases
 
-When releasing a new version:
+Releases are fully automated. Just push to `main` and the workflow will:
+1. Auto-increment patch version (1.0.5 → 1.0.6)
+2. Build and tag all Docker images
+3. Update `config.yaml` in addon repo
+4. Add changelog entry and push addon repo
 
-- [ ] Update version in `public-addon/familyflow/config.yaml`
-- [ ] Update `public-addon/familyflow/CHANGELOG.md`
-- [ ] Commit and push main repo
-- [ ] Commit and push public-addon repo
-- [ ] Tag main repo: `git tag vX.X.X && git push origin vX.X.X`
-- [ ] Tag addon repo: `cd public-addon && git tag vX.X.X && git push origin vX.X.X`
+For manual version control, use workflow_dispatch with version_bump option (patch/minor/major).
 
 ### File Editing Notes
 
@@ -38,7 +37,7 @@ cd backend && npm run build
 cd frontend && ./node_modules/.bin/ng build --configuration production
 
 # Full add-on image (runs in GitHub Actions)
-# Triggered by pushing tag to main repo
+# Triggered automatically on push to main
 ```
 
 ### Testing Locally
@@ -74,7 +73,7 @@ cd frontend && npm install && ./node_modules/.bin/ng build
 
 The `public-addon/` directory is the addon repo included as a subdirectory (not a git submodule).
 
-**Key insight:** GitHub Actions workflow in main repo builds Docker image. It reads version from main repo's git tags, NOT from config.yaml. Always tag main repo when releasing.
+**Key insight:** GitHub Actions workflow in main repo automatically handles versioning. It reads current version from addon repo's config.yaml, increments it, builds images, then updates the addon repo.
 
 ## MQTT Entity Structure
 

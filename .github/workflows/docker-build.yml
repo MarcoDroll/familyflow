@@ -4,7 +4,20 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allow manual trigger
+    paths-ignore:
+      - '**.md'
+      - 'public-addon/**'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 env:
   REGISTRY: ghcr.io
@@ -13,7 +26,59 @@ env:
   ADDON_REPO: MarcoDroll/familyflow-addon
 
 jobs:
+  version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      previous: ${{ steps.current.outputs.version }}
+    steps:
+      - name: Checkout addon repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ADDON_REPO }}
+          token: ${{ secrets.ADDON_REPO_TOKEN }}
+          path: addon-repo
+
+      - name: Get current version
+        id: current
+        run: |
+          VERSION=$(grep '^version:' addon-repo/familyflow/config.yaml | sed 's/version: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Bump version
+        id: bump
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
+
+          # Parse version
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          # Bump based on type
+          case $BUMP_TYPE in
+            major)
+              MAJOR=$((MAJOR + 1))
+              MINOR=0
+              PATCH=0
+              ;;
+            minor)
+              MINOR=$((MINOR + 1))
+              PATCH=0
+              ;;
+            patch)
+              PATCH=$((PATCH + 1))
+              ;;
+          esac
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped version: $CURRENT -> $NEW_VERSION ($BUMP_TYPE)"
+
   build-and-push:
+    name: Build Docker Images
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,22 +87,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Checkout addon repository for version
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.ADDON_REPO }}
-          path: addon-repo
-
-      - name: Extract version from config.yaml
-        id: version
-        run: |
-          VERSION=$(grep '^version:' addon-repo/familyflow/config.yaml | sed 's/version: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
-          if [ -z "$VERSION" ]; then
-            VERSION="latest"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -56,7 +105,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ needs.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:latest
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:latest
           cache-to: type=inline
@@ -68,7 +117,7 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ needs.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
           cache-to: type=inline
@@ -77,15 +126,16 @@ jobs:
         run: |
           echo "## Docker Images Built" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ needs.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
 
   build-addon:
     name: Build HA Add-on (aarch64)
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,22 +148,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Checkout addon repository for version
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ env.ADDON_REPO }}
-          path: addon-repo
-
-      - name: Extract version from config.yaml
-        id: version
-        run: |
-          VERSION=$(grep '^version:' addon-repo/familyflow/config.yaml | sed 's/version: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
-          if [ -z "$VERSION" ]; then
-            VERSION="latest"
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building add-on version: $VERSION"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -136,12 +170,12 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ needs.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:latest
           build-args: |
             BUILD_FROM=${{ env.BASE_IMAGE }}
             BUILD_ARCH=${{ env.ARCH }}
-            BUILD_VERSION=${{ steps.version.outputs.version }}
+            BUILD_VERSION=${{ needs.version.outputs.version }}
           cache-from: type=gha,scope=addon-${{ env.ARCH }}
           cache-to: type=gha,mode=max,scope=addon-${{ env.ARCH }}
 
@@ -149,7 +183,56 @@ jobs:
         run: |
           echo "## Home Assistant Add-on Built" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ needs.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Architecture:** \`${{ env.ARCH }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ needs.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+
+  update-addon-repo:
+    name: Update Add-on Repository
+    needs: [version, build-and-push, build-addon]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout addon repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ADDON_REPO }}
+          token: ${{ secrets.ADDON_REPO_TOKEN }}
+          path: addon-repo
+
+      - name: Update version in config.yaml
+        run: |
+          cd addon-repo
+          sed -i 's/^version: .*/version: "${{ needs.version.outputs.version }}"/' familyflow/config.yaml
+          echo "Updated config.yaml to version ${{ needs.version.outputs.version }}"
+          cat familyflow/config.yaml | grep version
+
+      - name: Add changelog entry
+        run: |
+          cd addon-repo
+          DATE=$(date +%Y-%m-%d)
+          VERSION="${{ needs.version.outputs.version }}"
+
+          # Create new changelog entry
+          ENTRY="## [$VERSION] - $DATE\n\n### Changed\n\n- Automated release\n"
+
+          # Insert after the header line
+          sed -i "/^# Changelog/a\\
+\\
+$ENTRY" familyflow/CHANGELOG.md
+
+      - name: Commit and push changes
+        run: |
+          cd addon-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add familyflow/config.yaml familyflow/CHANGELOG.md
+          git commit -m "Release v${{ needs.version.outputs.version }}"
+          git push
+
+      - name: Create build summary
+        run: |
+          echo "## Add-on Repository Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ needs.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** [${{ env.ADDON_REPO }}](https://github.com/${{ env.ADDON_REPO }})" >> $GITHUB_STEP_SUMMARY
