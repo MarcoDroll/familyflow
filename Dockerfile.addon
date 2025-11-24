@@ -45,9 +45,9 @@ RUN npm run build -- --configuration production \
 # Copy nginx configuration
 COPY addon/nginx/nginx.conf /etc/nginx/nginx.conf
 
-# Copy run script
+# Copy run script and ensure Unix line endings
 COPY addon/run.sh /run.sh
-RUN chmod +x /run.sh
+RUN sed -i 's/\r$//' /run.sh && chmod +x /run.sh
 
 # Verify Node.js installation
 RUN node --version && npm --version
