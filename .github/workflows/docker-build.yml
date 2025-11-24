@@ -84,23 +84,17 @@ jobs:
           echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-  # Build Home Assistant Add-on images (multi-arch)
+  # Build Home Assistant Add-on image (Raspberry Pi 5 / aarch64 only)
   build-addon:
-    name: Build HA Add-on (${{ matrix.arch }})
+    name: Build HA Add-on (aarch64)
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: amd64
-            platform: linux/amd64
-            base_image: ghcr.io/home-assistant/amd64-base-debian:bookworm
-          - arch: aarch64
-            platform: linux/arm64
-            base_image: ghcr.io/home-assistant/aarch64-base-debian:bookworm
+    env:
+      ARCH: aarch64
+      PLATFORM: linux/arm64
+      BASE_IMAGE: ghcr.io/home-assistant/aarch64-base-debian:bookworm
 
     steps:
       - name: Checkout repository
@@ -135,20 +129,20 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.addon
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ env.PLATFORM }}
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ matrix.arch }}:${{ steps.version.outputs.version }}
-            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ matrix.arch }}:latest
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ steps.version.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:latest
           build-args: |
-            BUILD_FROM=${{ matrix.base_image }}
-            BUILD_ARCH=${{ matrix.arch }}
+            BUILD_FROM=${{ env.BASE_IMAGE }}
+            BUILD_ARCH=${{ env.ARCH }}
             BUILD_VERSION=${{ steps.version.outputs.version }}
-          cache-from: type=gha,scope=addon-${{ matrix.arch }}
-          cache-to: type=gha,mode=max,scope=addon-${{ matrix.arch }}
+          cache-from: type=gha,scope=addon-${{ env.ARCH }}
+          cache-to: type=gha,mode=max,scope=addon-${{ env.ARCH }}
 
       - name: Add-on build summary
         run: |
-          echo "## Home Assistant Add-on (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
+          echo "## Home Assistant Add-on (${{ env.ARCH }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Image: \`${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ matrix.arch }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "Image: \`${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
