@@ -12,7 +12,10 @@ ls -la /usr/local/bin/node* 2>/dev/null || echo "No node in /usr/local/bin"
 # Set environment variables
 export PORT=3000
 export NODE_ENV=production
-export DATA_DIR=/data
+export DB_PATH=/config/famplan.db
+
+# Ensure config directory exists (mapped by Home Assistant)
+mkdir -p /config
 
 # Start nginx in background
 echo "Starting nginx..."
