@@ -1,11 +1,36 @@
-<div class="task-card" draggable="true">
+<div class="task-card" draggable="true" (click)="toggleActions($event)">
   <div class="task-content">
     <h3 class="task-title">{{ task.title }}</h3>
     <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
   </div>
+  
   <div class="task-meta" *ngIf="task.recurrence_type !== 'none'">
     <span class="recurrence-badge">
       🔄 {{ getRecurrenceInfo() }}
     </span>
+  </div>
+
+  <!-- Mobile-friendly status actions -->
+  <div class="task-actions" [class.visible]="showActions">
+    <button 
+      *ngIf="getPrevStatus()" 
+      class="action-btn prev"
+      (click)="moveToStatus(getPrevStatus()!, $event)"
+      [title]="'Verschieben zu: ' + statusLabels[getPrevStatus()!]"
+    >
+      ← {{ statusLabels[getPrevStatus()!] }}
+    </button>
+    <button 
+      *ngIf="getNextStatus()" 
+      class="action-btn next"
+      (click)="moveToStatus(getNextStatus()!, $event)"
+      [title]="'Verschieben zu: ' + statusLabels[getNextStatus()!]"
+    >
+      {{ statusLabels[getNextStatus()!] }} →
+    </button>
+  </div>
+  
+  <div class="tap-hint" *ngIf="!showActions">
+    <span>Tippen für Aktionen</span>
   </div>
 </div>

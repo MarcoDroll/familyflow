@@ -3,9 +3,12 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 0.85rem;
-  cursor: move;
+  cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 
   &:hover {
     transform: translateY(-2px);
@@ -14,8 +17,7 @@
   }
 
   &:active {
-    cursor: grabbing;
-    opacity: 0.8;
+    opacity: 0.9;
   }
 }
 
@@ -41,6 +43,7 @@
 .task-meta {
   display: flex;
   justify-content: flex-end;
+  margin-bottom: 0.5rem;
 
   .recurrence-badge {
     font-size: 0.75rem;
@@ -52,5 +55,90 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+  }
+}
+
+.task-actions {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  &.visible {
+    display: flex;
+  }
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  touch-action: manipulation;
+
+  &.prev {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+
+    &:hover, &:active {
+      background: rgba(251, 191, 36, 0.3);
+    }
+  }
+
+  &.next {
+    background: rgba(61, 217, 168, 0.2);
+    color: #3dd9a8;
+    border: 1px solid rgba(61, 217, 168, 0.3);
+
+    &:hover, &:active {
+      background: rgba(61, 217, 168, 0.3);
+    }
+  }
+}
+
+.tap-hint {
+  display: none;
+  justify-content: center;
+  margin-top: 0.5rem;
+  
+  span {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.3);
+  }
+}
+
+// Show tap hint only on touch devices
+@media (hover: none) and (pointer: coarse) {
+  .tap-hint {
+    display: flex;
+  }
+  
+  .task-card {
+    cursor: pointer;
+    
+    // Remove drag styling on mobile
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+// Desktop: hide actions by default, rely more on drag-drop
+@media (hover: hover) and (pointer: fine) {
+  .tap-hint {
+    display: none;
+  }
+  
+  .task-card {
+    cursor: move;
   }
 }

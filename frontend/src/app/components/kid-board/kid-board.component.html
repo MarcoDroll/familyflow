@@ -5,7 +5,7 @@
       <p class="eyebrow">Board</p>
       <h1>{{ kid.name }}</h1>
       <p class="muted">
-        Ziehe Karten zwischen Spalten, um den Status zu aktualisieren.
+        Tippe auf Karten oder ziehe sie zwischen Spalten.
       </p>
     </div>
     <div class="status-pill">
@@ -38,6 +38,7 @@
           *ngFor="let task of tasksByStatus.get(status)"
           [task]="task"
           (dragstart)="onDragStart($event, task)"
+          (statusChange)="updateTaskStatus(task, $event)"
         ></app-task-card>
       </div>
     </div>
