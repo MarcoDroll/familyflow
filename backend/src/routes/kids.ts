@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { KidModel } from '../models/Kid';
+import { mqttService } from '../services/mqtt';
 
 const router = Router();
 
@@ -33,6 +34,8 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name is required' });
     }
     const kid = await KidModel.create(name, color);
+    // Register new kid with MQTT discovery
+    mqttService.onKidCreated(kid).catch(err => console.error('MQTT publish error:', err));
     res.status(201).json(kid);
   } catch (error) {
     console.error('Error creating kid:', error);
@@ -50,6 +53,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!kid) {
       return res.status(404).json({ error: 'Kid not found' });
     }
+    // Update MQTT discovery config with new name
+    mqttService.onKidCreated(kid).catch(err => console.error('MQTT publish error:', err));
     res.json(kid);
   } catch (error) {
     console.error('Error updating kid:', error);
@@ -59,10 +64,13 @@ router.put('/:id', async (req: Request, res: Response) => {
 
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    const success = await KidModel.delete(parseInt(req.params.id));
+    const kidId = parseInt(req.params.id);
+    const success = await KidModel.delete(kidId);
     if (!success) {
       return res.status(404).json({ error: 'Kid not found' });
     }
+    // Remove MQTT discovery config
+    mqttService.onKidDeleted(kidId).catch(err => console.error('MQTT publish error:', err));
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting kid:', error);

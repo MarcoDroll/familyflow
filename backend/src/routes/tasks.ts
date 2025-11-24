@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { TaskModel, TaskStatus, RecurrenceType } from '../models/Task';
+import { mqttService } from '../services/mqtt';
 
 const router = Router();
 
@@ -44,6 +45,8 @@ router.post('/', async (req: Request, res: Response) => {
       recurrence_type || 'none',
       recurrence_date ? new Date(recurrence_date) : null
     );
+    // Publish MQTT state update
+    mqttService.onTaskChanged(task).catch(err => console.error('MQTT publish error:', err));
     res.status(201).json(task);
   } catch (error) {
     console.error('Error creating task:', error);
@@ -67,6 +70,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
+    // Publish MQTT state update
+    mqttService.onTaskChanged(task).catch(err => console.error('MQTT publish error:', err));
     res.json(task);
   } catch (error) {
     console.error('Error updating task:', error);
@@ -88,6 +93,8 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
+    // Publish MQTT state update
+    mqttService.onTaskChanged(task).catch(err => console.error('MQTT publish error:', err));
     res.json(task);
   } catch (error) {
     console.error('Error updating task status:', error);
@@ -97,9 +104,15 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    // Get task before deletion to know kid_id for MQTT update
+    const task = await TaskModel.findById(parseInt(req.params.id));
     const success = await TaskModel.delete(parseInt(req.params.id));
     if (!success) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+    // Publish MQTT state update
+    if (task) {
+      mqttService.onTaskChanged(task).catch(err => console.error('MQTT publish error:', err));
     }
     res.status(204).send();
   } catch (error) {

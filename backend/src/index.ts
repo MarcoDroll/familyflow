@@ -5,6 +5,7 @@ import kidsRouter from './routes/kids';
 import tasksRouter from './routes/tasks';
 import { startScheduler } from './services/scheduler';
 import { initDatabase } from './database/db';
+import { mqttService } from './services/mqtt';
 
 dotenv.config();
 
@@ -21,7 +22,11 @@ app.use('/api/tasks', tasksRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    mqtt: mqttService.isEnabled() ? 'connected' : 'disabled'
+  });
 });
 
 // Initialize database and start server
@@ -30,6 +35,9 @@ async function start() {
     // Initialize database
     await initDatabase();
     console.log('Database initialized');
+
+    // Initialize MQTT for Home Assistant integration
+    await mqttService.initialize();
 
     // Start scheduler
     startScheduler();
