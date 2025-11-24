@@ -37,6 +37,18 @@
     font-size: 0.875rem;
     color: #b3bed5;
     line-height: 1.4;
+    word-break: break-word;
+
+    ::ng-deep a {
+      color: #3dd9a8;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+
+      &:hover {
+        color: #5ee8bc;
+      }
+    }
   }
 }
 

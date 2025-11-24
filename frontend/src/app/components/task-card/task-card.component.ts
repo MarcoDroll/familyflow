@@ -1,11 +1,12 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Task, TaskStatus, RECURRENCE_LABELS, TASK_STATUS_LABELS } from '../../models/task.model';
+import { LinkifyPipe } from '../../pipes/linkify.pipe';
 
 @Component({
   selector: 'app-task-card',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, LinkifyPipe],
   templateUrl: './task-card.component.html',
   styleUrls: ['./task-card.component.scss']
 })

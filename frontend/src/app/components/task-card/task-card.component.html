@@ -1,7 +1,7 @@
 <div class="task-card" draggable="true" (click)="toggleActions($event)">
   <div class="task-content">
     <h3 class="task-title">{{ task.title }}</h3>
-    <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+    <p class="task-description" *ngIf="task.description" [innerHTML]="task.description | linkify"></p>
   </div>
   
   <div class="task-meta" *ngIf="task.recurrence_type !== 'none'">
