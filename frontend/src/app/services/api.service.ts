@@ -8,7 +8,7 @@ import { Task, TaskStatus, RecurrenceType } from '../models/task.model';
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = '/api';
+  private apiUrl = 'api';
 
   constructor(private http: HttpClient) {}
 
