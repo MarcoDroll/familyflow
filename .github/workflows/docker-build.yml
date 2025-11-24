@@ -4,14 +4,13 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*.*.*'  # Trigger on semantic version tags (e.g., v1.0.0, v1.2.3)
   workflow_dispatch:  # Allow manual trigger
 
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: marcodroll/familyflow
   ADDON_IMAGE: marcodroll/familyflow-addon
+  ADDON_REPO: MarcoDroll/familyflow-addon
 
 jobs:
   build-and-push:
@@ -24,6 +23,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Checkout addon repository for version
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ADDON_REPO }}
+          path: addon-repo
+
+      - name: Extract version from config.yaml
+        id: version
+        run: |
+          VERSION=$(grep '^version:' addon-repo/familyflow/config.yaml | sed 's/version: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+          if [ -z "$VERSION" ]; then
+            VERSION="latest"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -33,17 +48,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract version from tag
-        id: version
-        run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-          else
-            VERSION=latest
-          fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
 
       - name: Build and push Backend image
         uses: docker/build-push-action@v5
@@ -69,22 +73,17 @@ jobs:
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:latest
           cache-to: type=inline
 
-      - name: Create release notes
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create build summary
         run: |
-          echo "## Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "## Docker Images Built" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Backend: \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Frontend: \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pull images:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend:${{ steps.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
 
-  # Build Home Assistant Add-on image (Raspberry Pi 5 / aarch64 only)
   build-addon:
     name: Build HA Add-on (aarch64)
     runs-on: ubuntu-latest
@@ -100,15 +99,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract version from tag
+      - name: Checkout addon repository for version
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ADDON_REPO }}
+          path: addon-repo
+
+      - name: Extract version from config.yaml
         id: version
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            VERSION=${GITHUB_REF#refs/tags/v}
-          else
-            VERSION=latest
+          VERSION=$(grep '^version:' addon-repo/familyflow/config.yaml | sed 's/version: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+          if [ -z "$VERSION" ]; then
+            VERSION="latest"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building add-on version: $VERSION"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -139,3 +144,12 @@ jobs:
             BUILD_VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha,scope=addon-${{ env.ARCH }}
           cache-to: type=gha,mode=max,scope=addon-${{ env.ARCH }}
+
+      - name: Create build summary
+        run: |
+          echo "## Home Assistant Add-on Built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Architecture:** \`${{ env.ARCH }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.ADDON_IMAGE }}-${{ env.ARCH }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
