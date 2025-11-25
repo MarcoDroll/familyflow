@@ -156,15 +156,21 @@ export class ParentDashboardComponent implements OnInit {
 
   deleteKid(kid: Kid): void {
     if (confirm(`Möchten Sie ${kid.name} und alle zugehörigen Aufgaben wirklich löschen?`)) {
+      // Optimistic update: remove from local arrays immediately for instant UI feedback
+      this.kids = this.kids.filter(k => k.id !== kid.id);
+      this.allTasks = this.allTasks.filter(t => t.kid_id !== kid.id);
+      this.kidStats = this.kidStats.filter(s => s.kid.id !== kid.id);
+      if (this.selectedKid?.id === kid.id) {
+        this.selectedKid = this.kids.length > 0 ? this.kids[0] : null;
+        this.tasks = this.selectedKid ? this.allTasks.filter(t => t.kid_id === this.selectedKid!.id) : [];
+      }
+
       this.apiService.deleteKid(kid.id).subscribe({
-        next: () => {
+        error: (error) => {
+          console.error('Error deleting kid:', error);
+          // Revert on error: reload from server
           this.loadKids();
-          if (this.selectedKid?.id === kid.id) {
-            this.selectedKid = null;
-            this.tasks = [];
-          }
-        },
-        error: (error) => console.error('Error deleting kid:', error)
+        }
       });
     }
   }
@@ -244,14 +250,20 @@ export class ParentDashboardComponent implements OnInit {
 
   deleteTask(task: Task): void {
     if (confirm(`Möchten Sie die Aufgabe "${task.title}" wirklich löschen?`)) {
+      // Optimistic update: remove from local arrays immediately for instant UI feedback
+      this.tasks = this.tasks.filter(t => t.id !== task.id);
+      this.allTasks = this.allTasks.filter(t => t.id !== task.id);
+      this.calculateKidStats();
+
       this.apiService.deleteTask(task.id).subscribe({
-        next: () => {
+        error: (error) => {
+          console.error('Error deleting task:', error);
+          // Revert on error: reload from server
           if (this.selectedKid) {
             this.loadTasks(this.selectedKid.id);
           }
           this.loadAllTasksAndCalculateStats();
-        },
-        error: (error) => console.error('Error deleting task:', error)
+        }
       });
     }
   }
