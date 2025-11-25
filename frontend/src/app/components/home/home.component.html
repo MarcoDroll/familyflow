@@ -1,27 +1,3 @@
-<div class="hero">
-  <div class="hero__copy">
-    <p class="eyebrow">Familien-Planer</p>
-    <h1>Wähle dein Board</h1>
-    <p class="lede">
-      Jedes Kind hat sein eigenes Kanban-Board. Aufgaben wandern von
-      <strong>„Zu erledigen"</strong> über <strong>„Mach ich gerade"</strong>
-      zu <strong>„Erledigt"</strong>.
-    </p>
-  </div>
-  <div class="hero__stats">
-    <div class="stat-card">
-      <p class="label">Kinder</p>
-      <p class="value">{{ kids.length }}</p>
-      <p class="hint">eigene Boards</p>
-    </div>
-    <div class="stat-card" (click)="openPinDialog()" style="cursor: pointer;">
-      <p class="label">Eltern</p>
-      <p class="value">🔒</p>
-      <p class="hint">Dashboard</p>
-    </div>
-  </div>
-</div>
-
 <section class="kids">
   <div class="section-head">
     <div>
@@ -49,6 +25,30 @@
     </article>
   </div>
 </section>
+
+<div class="hero">
+  <div class="hero__copy">
+    <p class="eyebrow">Familien-Planer</p>
+    <h1>Wähle dein Board</h1>
+    <p class="lede">
+      Jedes Kind hat sein eigenes Kanban-Board. Aufgaben wandern von
+      <strong>„Zu erledigen"</strong> über <strong>„Mach ich gerade"</strong>
+      zu <strong>„Erledigt"</strong>.
+    </p>
+  </div>
+  <div class="hero__stats">
+    <div class="stat-card">
+      <p class="label">Kinder</p>
+      <p class="value">{{ kids.length }}</p>
+      <p class="hint">eigene Boards</p>
+    </div>
+    <div class="stat-card" (click)="openPinDialog()" style="cursor: pointer;">
+      <p class="label">Eltern</p>
+      <p class="value">🔒</p>
+      <p class="hint">Dashboard</p>
+    </div>
+  </div>
+</div>
 
 <!-- PIN Dialog -->
 <app-pin-entry
