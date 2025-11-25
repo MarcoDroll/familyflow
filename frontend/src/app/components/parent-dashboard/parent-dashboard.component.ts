@@ -47,7 +47,8 @@ export class ParentDashboardComponent implements OnInit {
     title: '',
     description: '',
     recurrence_type: 'none' as RecurrenceType,
-    recurrence_date: null as string | null
+    recurrence_date: null as string | null,
+    scheduled_time: null as string | null
   };
 
   constructor(
@@ -180,7 +181,8 @@ export class ParentDashboardComponent implements OnInit {
         title: task.title,
         description: task.description || '',
         recurrence_type: task.recurrence_type,
-        recurrence_date: task.recurrence_date ? new Date(task.recurrence_date).toISOString().split('T')[0] : null
+        recurrence_date: task.recurrence_date ? new Date(task.recurrence_date).toISOString().split('T')[0] : null,
+        scheduled_time: task.scheduled_time || null
       };
     } else {
       this.taskForm = {
@@ -189,7 +191,8 @@ export class ParentDashboardComponent implements OnInit {
         title: '',
         description: '',
         recurrence_type: 'none',
-        recurrence_date: null
+        recurrence_date: null,
+        scheduled_time: null
       };
     }
     this.showTaskDialog = true;
@@ -206,7 +209,8 @@ export class ParentDashboardComponent implements OnInit {
         this.taskForm.title,
         this.taskForm.description || null,
         this.taskForm.recurrence_type,
-        recurrenceDate
+        recurrenceDate,
+        this.taskForm.scheduled_time
       ).subscribe({
         next: () => {
           if (this.selectedKid) {
@@ -223,7 +227,8 @@ export class ParentDashboardComponent implements OnInit {
         this.taskForm.title,
         this.taskForm.description || null,
         this.taskForm.recurrence_type,
-        recurrenceDate
+        recurrenceDate,
+        this.taskForm.scheduled_time
       ).subscribe({
         next: () => {
           if (this.selectedKid) {
@@ -267,4 +272,3 @@ export class ParentDashboardComponent implements OnInit {
     this.statsCollapsed = !this.statsCollapsed;
   }
 }
-
