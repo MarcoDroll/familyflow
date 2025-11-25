@@ -29,10 +29,27 @@ export async function initDatabase() {
   // Enable foreign keys
   db.run('PRAGMA foreign_keys = ON');
 
+  // Backup database before migrations
+  backupDatabase();
+
   // Run migrations to ensure tables exist
   runMigrations();
 
   return db;
+}
+
+
+// Backup database before migrations
+function backupDatabase() {
+  if (fs.existsSync(dbPath)) {
+    const backupPath = dbPath + '.backup';
+    try {
+      fs.copyFileSync(dbPath, backupPath);
+      console.log('Database backed up to:', backupPath);
+    } catch (e) {
+      console.error('Failed to backup database:', e);
+    }
+  }
 }
 
 // Create tables if they don't exist
@@ -66,10 +83,22 @@ function runMigrations() {
 
   // Add scheduled_time column if it doesn't exist (migration)
   try {
-    db.run(`ALTER TABLE tasks ADD COLUMN scheduled_time TEXT`);
-    saveDatabase();
+    // Check if column exists first
+    const tableInfo = db.exec(`PRAGMA table_info(tasks)`);
+    const columns = tableInfo[0]?.values || [];
+    const hasScheduledTime = columns.some((col: any[]) => col[1] === 'scheduled_time');
+    
+    if (!hasScheduledTime) {
+      console.log('Adding scheduled_time column to tasks table...');
+      db.run(`ALTER TABLE tasks ADD COLUMN scheduled_time TEXT`);
+      saveDatabase();
+      console.log('scheduled_time column added successfully');
+    } else {
+      console.log('scheduled_time column already exists, skipping migration');
+    }
   } catch (e) {
-    // Column already exists, ignore error
+    console.error('Error during scheduled_time migration:', e);
+    // Don't save if migration failed
   }
 
   // Create indexes
