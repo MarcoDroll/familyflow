@@ -87,6 +87,7 @@
           <button class="btn btn-primary" (click)="openTaskDialog()">+ Aufgabe hinzufügen</button>
         </div>
 
+        <!-- Desktop: Table view -->
         <div class="tasks-table">
           <table *ngIf="tasks.length > 0">
             <thead>
@@ -125,9 +126,42 @@
               </tr>
             </tbody>
           </table>
-          <div *ngIf="tasks.length === 0" class="empty-message">
-            Noch keine Aufgaben für dieses Kind
+        </div>
+
+        <!-- Mobile: Card view -->
+        <div class="tasks-cards" *ngIf="tasks.length > 0">
+          <div class="task-card-item" *ngFor="let task of tasks">
+            <div class="task-card-header">
+              <span class="task-title">{{ task.title }}</span>
+              <div class="task-actions">
+                <button class="btn-icon" (click)="openTaskDialog(task)" title="Bearbeiten">✏️</button>
+                <button class="btn-icon" (click)="deleteTask(task)" title="Löschen">🗑️</button>
+              </div>
+            </div>
+            <div class="task-card-body">
+              <p class="task-description" *ngIf="task.description">{{ task.description }}</p>
+              <div class="task-meta">
+                <span class="status-badge" [class]="'status-' + task.status">
+                  {{ statusLabels[task.status] }}
+                </span>
+                <span class="task-meta-item" *ngIf="task.recurrence_type !== 'none'">
+                  <span class="meta-icon">🔄</span>
+                  {{ recurrenceLabels[task.recurrence_type] }}
+                  <span *ngIf="task.recurrence_type === 'specific_date' && task.recurrence_date">
+                    ({{ task.recurrence_date | date:'dd.MM.' }})
+                  </span>
+                </span>
+                <span class="task-meta-item" *ngIf="task.scheduled_time">
+                  <span class="meta-icon">🕐</span>
+                  {{ task.scheduled_time }}
+                </span>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div *ngIf="tasks.length === 0" class="empty-message">
+          Noch keine Aufgaben für dieses Kind
         </div>
       </div>
 

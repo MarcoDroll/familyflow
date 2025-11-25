@@ -302,9 +302,13 @@
 
 // Tasks Table
 .tasks-table {
+  overflow-x: auto; // Enable horizontal scroll on mobile
+  -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+
   table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 700px; // Ensure table doesn't squish too much
 
     thead {
       background: rgba(255, 255, 255, 0.04);
@@ -315,6 +319,7 @@
         font-weight: 600;
         color: #b3bed5;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        white-space: nowrap;
       }
     }
 
@@ -332,6 +337,78 @@
           color: #e8eef7;
         }
       }
+    }
+  }
+}
+
+// Mobile card-based task list
+.tasks-cards {
+  display: none; // Hidden by default, shown on mobile
+}
+
+.task-card-item {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .task-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+
+    .task-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: #f7fafc;
+      flex: 1;
+      margin-right: 0.5rem;
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+  }
+
+  .task-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .task-description {
+    font-size: 0.875rem;
+    color: #b3bed5;
+    line-height: 1.4;
+  }
+
+  .task-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.25rem;
+  }
+
+  .task-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    color: #9fb3d7;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+
+    .meta-icon {
+      font-size: 0.75rem;
     }
   }
 }
@@ -521,18 +598,124 @@
 
 // Responsive
 @media (max-width: 960px) {
+  .dashboard {
+    padding: 1rem;
+  }
+
   .dashboard-content {
     flex-direction: column;
   }
 
   .kids-sidebar {
     width: 100%;
-    max-height: 300px;
+    max-height: none; // Remove height constraint - let it flow naturally
   }
 
   .dashboard-header {
     flex-direction: column;
     gap: 1rem;
     text-align: center;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+
+    h2 {
+      font-size: 1.25rem;
+      text-align: center;
+    }
+
+    .btn {
+      width: 100%;
+    }
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr; // Single column on mobile
+  }
+}
+
+// Touch device optimizations
+@media (hover: none) and (pointer: coarse) {
+  // Always show kid actions on touch devices (no hover available)
+  .kid-item {
+    .kid-actions {
+      opacity: 1;
+    }
+  }
+
+  // Larger touch targets for icon buttons
+  .btn-icon {
+    padding: 0.625rem;
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // Better touch response
+  .kid-item,
+  .stat-card,
+  .btn,
+  .toggle-btn {
+    touch-action: manipulation;
+  }
+
+  // Disable hover transforms on touch
+  .stat-card:hover,
+  .kid-item:hover {
+    transform: none;
+  }
+}
+
+// Small mobile screens
+@media (max-width: 600px) {
+  .dashboard {
+    padding: 0.75rem;
+  }
+
+  .stats-overview {
+    padding: 0.875rem;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
+
+  .kids-sidebar {
+    padding: 1rem;
+  }
+
+  .tasks-section {
+    padding: 1rem;
+  }
+
+  .modal-content {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+
+    .btn {
+      width: 100%;
+    }
+  }
+
+  // Switch to card layout on small screens
+  .tasks-table {
+    display: none;
+  }
+
+  .tasks-cards {
+    display: block;
   }
 }
