@@ -9,6 +9,7 @@ export interface Task {
   status: TaskStatus;
   recurrence_type: RecurrenceType;
   recurrence_date: Date | null;
+  scheduled_time: string | null;
   last_reset: Date | null;
   created_at: Date;
   updated_at: Date;

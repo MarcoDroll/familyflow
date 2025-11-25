@@ -3,16 +3,17 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Kid } from '../models/kid.model';
 import { Task, TaskStatus, RecurrenceType } from '../models/task.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private apiUrl = 'api';
+  private apiUrl = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
-  // Kids endpoints
+  // Kids
   getKids(): Observable<Kid[]> {
     return this.http.get<Kid[]>(`${this.apiUrl}/kids`);
   }
@@ -33,7 +34,7 @@ export class ApiService {
     return this.http.delete<void>(`${this.apiUrl}/kids/${id}`);
   }
 
-  // Tasks endpoints
+  // Tasks
   getTasks(kidId?: number): Observable<Task[]> {
     const url = kidId
       ? `${this.apiUrl}/tasks?kid_id=${kidId}`
@@ -50,14 +51,16 @@ export class ApiService {
     title: string,
     description: string | null,
     recurrenceType: RecurrenceType,
-    recurrenceDate: Date | null
+    recurrenceDate: Date | null,
+    scheduledTime: string | null
   ): Observable<Task> {
     return this.http.post<Task>(`${this.apiUrl}/tasks`, {
       kid_id: kidId,
       title,
       description,
       recurrence_type: recurrenceType,
-      recurrence_date: recurrenceDate
+      recurrence_date: recurrenceDate,
+      scheduled_time: scheduledTime
     });
   }
 
@@ -66,13 +69,15 @@ export class ApiService {
     title: string,
     description: string | null,
     recurrenceType: RecurrenceType,
-    recurrenceDate: Date | null
+    recurrenceDate: Date | null,
+    scheduledTime: string | null
   ): Observable<Task> {
     return this.http.put<Task>(`${this.apiUrl}/tasks/${id}`, {
       title,
       description,
       recurrence_type: recurrenceType,
-      recurrence_date: recurrenceDate
+      recurrence_date: recurrenceDate,
+      scheduled_time: scheduledTime
     });
   }
 
