@@ -11,6 +11,7 @@ export interface Task {
   status: TaskStatus;
   recurrence_type: RecurrenceType;
   recurrence_date: Date | null;
+  scheduled_time: string | null;
   last_reset: Date | null;
   created_at: Date;
   updated_at: Date;
@@ -40,12 +41,13 @@ export class TaskModel {
     title: string,
     description: string | null = null,
     recurrenceType: RecurrenceType = 'none',
-    recurrenceDate: Date | null = null
+    recurrenceDate: Date | null = null,
+    scheduledTime: string | null = null
   ): Promise<Task> {
     const result = await query(
-      `INSERT INTO tasks (kid_id, title, description, recurrence_type, recurrence_date)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [kidId, title, description, recurrenceType, recurrenceDate]
+      `INSERT INTO tasks (kid_id, title, description, recurrence_type, recurrence_date, scheduled_time)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [kidId, title, description, recurrenceType, recurrenceDate, scheduledTime]
     );
     return result.rows[0];
   }
@@ -63,13 +65,14 @@ export class TaskModel {
     title: string,
     description: string | null,
     recurrenceType: RecurrenceType,
-    recurrenceDate: Date | null
+    recurrenceDate: Date | null,
+    scheduledTime: string | null
   ): Promise<Task | null> {
     const result = await query(
       `UPDATE tasks
-       SET title = $1, description = $2, recurrence_type = $3, recurrence_date = $4, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5 RETURNING *`,
-      [title, description, recurrenceType, recurrenceDate, id]
+       SET title = $1, description = $2, recurrence_type = $3, recurrence_date = $4, scheduled_time = $5, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $6 RETURNING *`,
+      [title, description, recurrenceType, recurrenceDate, scheduledTime, id]
     );
     return result.rows[0] || null;
   }

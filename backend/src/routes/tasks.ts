@@ -34,7 +34,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { kid_id, title, description, recurrence_type, recurrence_date } = req.body;
+    const { kid_id, title, description, recurrence_type, recurrence_date, scheduled_time } = req.body;
     if (!kid_id || !title) {
       return res.status(400).json({ error: 'kid_id and title are required' });
     }
@@ -43,7 +43,8 @@ router.post('/', async (req: Request, res: Response) => {
       title,
       description,
       recurrence_type || 'none',
-      recurrence_date ? new Date(recurrence_date) : null
+      recurrence_date ? new Date(recurrence_date) : null,
+      scheduled_time || null
     );
     // Publish MQTT state update
     mqttService.onTaskChanged(task).catch(err => console.error('MQTT publish error:', err));
@@ -56,7 +57,7 @@ router.post('/', async (req: Request, res: Response) => {
 
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { title, description, recurrence_type, recurrence_date } = req.body;
+    const { title, description, recurrence_type, recurrence_date, scheduled_time } = req.body;
     if (!title) {
       return res.status(400).json({ error: 'Title is required' });
     }
@@ -65,7 +66,8 @@ router.put('/:id', async (req: Request, res: Response) => {
       title,
       description,
       recurrence_type || 'none',
-      recurrence_date ? new Date(recurrence_date) : null
+      recurrence_date ? new Date(recurrence_date) : null,
+      scheduled_time || null
     );
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });

@@ -64,6 +64,14 @@ function runMigrations() {
     )
   `);
 
+  // Add scheduled_time column if it doesn't exist (migration)
+  try {
+    db.run(`ALTER TABLE tasks ADD COLUMN scheduled_time TEXT`);
+    saveDatabase();
+  } catch (e) {
+    // Column already exists, ignore error
+  }
+
   // Create indexes
   db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_kid_id ON tasks(kid_id)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)`);
