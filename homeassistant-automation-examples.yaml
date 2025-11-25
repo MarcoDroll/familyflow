@@ -1,0 +1,173 @@
+# Home Assistant Automation Examples for FamilyFlow Overdue Tasks
+#
+# These examples show how to create automations that notify you when tasks are overdue.
+# Add these to your Home Assistant configuration.yaml or automations.yaml file.
+
+# Example 1: Notify when ANY child has overdue tasks (triggers once when state changes to overdue)
+automation:
+  - alias: "FamilyFlow: Notify on Overdue Tasks"
+    description: "Send notification when any child has tasks that are overdue"
+    trigger:
+      # Trigger when any child's "has overdue tasks" binary sensor turns ON
+      - platform: state
+        entity_id:
+          - binary_sensor.familyflow_1_has_overdue  # Replace with your actual child IDs
+          - binary_sensor.familyflow_2_has_overdue
+          # Add more children as needed
+        to: "on"
+    action:
+      - service: notify.notify  # Change to your notification service (e.g., notify.mobile_app_phone)
+        data:
+          title: "FamilyFlow: Overdue Tasks!"
+          message: >
+            {{ trigger.to_state.attributes.friendly_name }} has overdue tasks.
+
+# Example 2: Periodic reminder for overdue tasks (checks every hour)
+  - alias: "FamilyFlow: Hourly Overdue Task Reminder"
+    description: "Send reminder every hour if there are overdue tasks"
+    trigger:
+      - platform: time_pattern
+        hours: "*"  # Every hour
+        minutes: "0"  # At the top of the hour
+    condition:
+      # Only send if at least one child has overdue tasks
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.familyflow_1_has_overdue
+            state: "on"
+          - condition: state
+            entity_id: binary_sensor.familyflow_2_has_overdue
+            state: "on"
+          # Add more children as needed
+    action:
+      - service: notify.notify
+        data:
+          title: "FamilyFlow: Overdue Tasks Reminder"
+          message: "Some children have overdue tasks. Please check FamilyFlow!"
+
+# Example 3: Notify at specific time if tasks are still overdue
+  - alias: "FamilyFlow: Evening Overdue Task Summary"
+    description: "Send summary of overdue tasks at 6 PM"
+    trigger:
+      - platform: time
+        at: "18:00:00"  # 6 PM
+    condition:
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.familyflow_1_has_overdue
+            state: "on"
+          - condition: state
+            entity_id: binary_sensor.familyflow_2_has_overdue
+            state: "on"
+    action:
+      - service: notify.notify
+        data:
+          title: "FamilyFlow: Evening Task Summary"
+          message: "There are overdue tasks. Check the dashboard!"
+
+# Example 4: Flash lights when task becomes overdue (requires smart lights)
+  - alias: "FamilyFlow: Visual Alert for Overdue Tasks"
+    description: "Flash lights when a task becomes overdue"
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.familyflow_1_has_overdue
+          - binary_sensor.familyflow_2_has_overdue
+        to: "on"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.living_room  # Replace with your light entity
+        data:
+          flash: short
+          rgb_color: [255, 0, 0]  # Red color
+
+# Example 5: Create a persistent notification that stays until tasks are done
+  - alias: "FamilyFlow: Create Persistent Notification for Overdue Tasks"
+    description: "Show persistent notification in HA when tasks are overdue"
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.familyflow_1_has_overdue
+          - binary_sensor.familyflow_2_has_overdue
+        to: "on"
+    action:
+      - service: persistent_notification.create
+        data:
+          title: "Overdue Tasks!"
+          message: "Check the FamilyFlow dashboard for overdue tasks!"
+          notification_id: "familyflow_overdue"
+
+  - alias: "FamilyFlow: Dismiss Persistent Notification When Tasks Done"
+    description: "Remove notification when all overdue tasks are completed"
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.familyflow_1_has_overdue
+          - binary_sensor.familyflow_2_has_overdue
+        to: "off"
+    condition:
+      # Dismiss only when ALL children have no overdue tasks
+      - condition: state
+        entity_id: binary_sensor.familyflow_1_has_overdue
+        state: "off"
+      - condition: state
+        entity_id: binary_sensor.familyflow_2_has_overdue
+        state: "off"
+    action:
+      - service: persistent_notification.dismiss
+        data:
+          notification_id: "familyflow_overdue"
+
+# Example 6: Send notification only during daytime hours
+  - alias: "FamilyFlow: Daytime Overdue Notification"
+    description: "Notify about overdue tasks only between 7 AM and 9 PM"
+    trigger:
+      - platform: state
+        entity_id:
+          - binary_sensor.familyflow_1_has_overdue
+          - binary_sensor.familyflow_2_has_overdue
+        to: "on"
+    condition:
+      - condition: time
+        after: "07:00:00"
+        before: "21:00:00"
+    action:
+      - service: notify.notify
+        data:
+          title: "FamilyFlow: Task Overdue"
+          message: "A child has overdue tasks. Check FamilyFlow!"
+
+# Sensor Entities Created by FamilyFlow:
+#
+# For each child, the following entities are created:
+#
+# 1. sensor.familyflow_{kid_id}_overdue
+#    - State: Number of overdue tasks (integer)
+#    - Icon: mdi:clock-alert
+#
+# 2. binary_sensor.familyflow_{kid_id}_has_overdue
+#    - State: on/off (on if any tasks are overdue)
+#    - Device Class: problem
+#    - Icon: mdi:alert-circle
+#
+# 3. sensor.familyflow_{kid_id}_tasks (updated to include overdue info)
+#    - Attributes:
+#      - overdue_tasks: Number of overdue tasks
+#      - overdue_task_list: Array of overdue tasks with title, scheduled_time, status
+#      - task_list: Now includes scheduled_time for each task
+#
+# Task is considered overdue if:
+# - Status is not "erledigt" (completed)
+# - Has a scheduled_time set
+# - Current time is past the scheduled_time
+
+# Tips:
+# 1. Replace child IDs (1, 2, etc.) with your actual child IDs from FamilyFlow
+# 2. Replace notify.notify with your actual notification service
+# 3. Adjust time triggers and conditions to your preferences
+# 4. You can combine multiple conditions (e.g., only notify on weekdays)
+# 5. Use Home Assistant's template editor to test message templates
+# 6. Check Developer Tools > States to see all available FamilyFlow entities
