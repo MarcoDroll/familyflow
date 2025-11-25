@@ -61,8 +61,17 @@ The Docker build workflow reads version from **git tags in the main repo**, not 
 
 ### MQTT Integration
 - Entities auto-discovered when Mosquitto broker is available
-- Sensors per child: `sensor.familyflow_{child}_tasks`, `binary_sensor.familyflow_{child}_all_done`
+- Sensors per child:
+  - `sensor.familyflow_{child}_tasks` - Task completion ratio (e.g., "3/5")
+  - `sensor.familyflow_{child}_overdue` - Number of overdue tasks
+  - `sensor.familyflow_{child}_in_progress` - Tasks in progress count
+  - `sensor.familyflow_{child}_todo` - Todo tasks count
+  - `binary_sensor.familyflow_{child}_all_done` - ON when all tasks complete
+  - `binary_sensor.familyflow_{child}_has_overdue` - ON when tasks are overdue
+- Task attributes include `scheduled_time` for automation triggers
+- Overdue detection: Tasks with `scheduled_time` < current time and status ≠ "erledigt"
 - Supervisor token automatically injected when `hassio_api: true`
+- See `homeassistant-automation-examples.yaml` for notification automation examples
 
 ### Mobile Support
 - HTML5 drag-and-drop doesn't work on touch devices
