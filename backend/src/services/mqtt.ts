@@ -15,6 +15,13 @@ interface TaskStats {
   completed: number;
   inProgress: number;
   todo: number;
+  overdue: number;
+}
+
+interface OverdueTask {
+  title: string;
+  scheduled_time: string;
+  status: string;
 }
 
 interface SupervisorMqttResponse {
@@ -240,11 +247,44 @@ class MqttService {
       },
     };
 
+    // Overdue tasks count sensor
+    const overdueConfig = {
+      name: `${kid.name} Overdue Tasks`,
+      unique_id: `${uniqueId}_overdue`,
+      state_topic: `${this.statePrefix}/${kid.id}/overdue/state`,
+      icon: 'mdi:clock-alert',
+      device: {
+        identifiers: [uniqueId],
+        name: `FamilyFlow - ${kid.name}`,
+        manufacturer: 'FamilyFlow',
+        model: 'Child Tasks',
+      },
+    };
+
+    // Has overdue tasks binary sensor
+    const hasOverdueConfig = {
+      name: `${kid.name} Has Overdue Tasks`,
+      unique_id: `${uniqueId}_has_overdue`,
+      state_topic: `${this.statePrefix}/${kid.id}/has_overdue/state`,
+      payload_on: 'ON',
+      payload_off: 'OFF',
+      device_class: 'problem',
+      icon: 'mdi:alert-circle',
+      device: {
+        identifiers: [uniqueId],
+        name: `FamilyFlow - ${kid.name}`,
+        manufacturer: 'FamilyFlow',
+        model: 'Child Tasks',
+      },
+    };
+
     // Publish discovery configs
     await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_tasks/config`, JSON.stringify(tasksConfig), true);
     await this.publish(`${this.discoveryPrefix}/binary_sensor/${uniqueId}_all_done/config`, JSON.stringify(allDoneConfig), true);
     await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_in_progress/config`, JSON.stringify(inProgressConfig), true);
     await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_todo/config`, JSON.stringify(todoConfig), true);
+    await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_overdue/config`, JSON.stringify(overdueConfig), true);
+    await this.publish(`${this.discoveryPrefix}/binary_sensor/${uniqueId}_has_overdue/config`, JSON.stringify(hasOverdueConfig), true);
 
     console.log(`MQTT: Published discovery config for ${kid.name}`);
   }
@@ -259,6 +299,8 @@ class MqttService {
     await this.publish(`${this.discoveryPrefix}/binary_sensor/${uniqueId}_all_done/config`, '', true);
     await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_in_progress/config`, '', true);
     await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_todo/config`, '', true);
+    await this.publish(`${this.discoveryPrefix}/sensor/${uniqueId}_overdue/config`, '', true);
+    await this.publish(`${this.discoveryPrefix}/binary_sensor/${uniqueId}_has_overdue/config`, '', true);
 
     console.log(`MQTT: Removed discovery config for kid ${kidId}`);
   }
@@ -276,12 +318,15 @@ class MqttService {
 
     const tasks = await TaskModel.findByKidId(kidId);
     const stats = this.calculateTaskStats(tasks);
+    const overdueTasks = this.calculateOverdueTasks(tasks);
 
     // Publish states
     await this.publish(`${this.statePrefix}/${kidId}/tasks/state`, `${stats.completed}/${stats.total}`);
     await this.publish(`${this.statePrefix}/${kidId}/all_done/state`, stats.completed === stats.total && stats.total > 0 ? 'ON' : 'OFF');
     await this.publish(`${this.statePrefix}/${kidId}/in_progress/state`, stats.inProgress.toString());
     await this.publish(`${this.statePrefix}/${kidId}/todo/state`, stats.todo.toString());
+    await this.publish(`${this.statePrefix}/${kidId}/overdue/state`, stats.overdue.toString());
+    await this.publish(`${this.statePrefix}/${kidId}/has_overdue/state`, stats.overdue > 0 ? 'ON' : 'OFF');
 
     // Publish detailed attributes
     const attributes = {
@@ -289,18 +334,21 @@ class MqttService {
       completed_tasks: stats.completed,
       in_progress_tasks: stats.inProgress,
       todo_tasks: stats.todo,
+      overdue_tasks: stats.overdue,
       completion_percentage: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
       task_list: tasks.map(t => ({
         title: t.title,
         status: t.status,
         recurrence: t.recurrence_type,
+        scheduled_time: t.scheduled_time,
       })),
+      overdue_task_list: overdueTasks,
       last_updated: new Date().toISOString(),
     };
 
     await this.publish(`${this.statePrefix}/${kidId}/tasks/attributes`, JSON.stringify(attributes));
 
-    console.log(`MQTT: Published state for kid ${kidId}: ${stats.completed}/${stats.total} tasks`);
+    console.log(`MQTT: Published state for kid ${kidId}: ${stats.completed}/${stats.total} tasks, ${stats.overdue} overdue`);
   }
 
   private calculateTaskStats(tasks: Task[]): TaskStats {
@@ -309,7 +357,30 @@ class MqttService {
       completed: tasks.filter(t => t.status === 'erledigt').length,
       inProgress: tasks.filter(t => t.status === 'mach_ich_gerade').length,
       todo: tasks.filter(t => t.status === 'zu_erledigen').length,
+      overdue: this.calculateOverdueTasks(tasks).length,
     };
+  }
+
+  private calculateOverdueTasks(tasks: Task[]): OverdueTask[] {
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    return tasks
+      .filter(task => {
+        // Only consider tasks that are not completed
+        if (task.status === 'erledigt') return false;
+
+        // Only tasks with scheduled_time
+        if (!task.scheduled_time) return false;
+
+        // Compare scheduled time with current time
+        return task.scheduled_time < currentTime;
+      })
+      .map(task => ({
+        title: task.title,
+        scheduled_time: task.scheduled_time!,
+        status: task.status,
+      }));
   }
 
   private publish(topic: string, message: string, retain: boolean = false): Promise<void> {
