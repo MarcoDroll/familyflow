@@ -93,8 +93,7 @@ export class TaskModel {
     const now = new Date().toISOString();
     const result = await query(
       `SELECT * FROM tasks
-       WHERE status = 'erledigt'
-       AND recurrence_type != 'none'
+       WHERE recurrence_type != 'none'
        AND (
          (recurrence_type = 'daily' AND (last_reset IS NULL OR date(last_reset) < date('now')))
          OR (recurrence_type = 'weekly' AND (last_reset IS NULL OR datetime(last_reset) < datetime('now', '-7 days')))
