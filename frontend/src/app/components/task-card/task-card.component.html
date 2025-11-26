@@ -12,16 +12,37 @@
 
   <!-- Mobile-friendly status actions -->
   <div class="task-actions" [class.visible]="showActions">
-    <button 
-      *ngIf="getPrevStatus()" 
+    <!-- Show "previous status" button if available -->
+    <button
+      *ngIf="getPrevStatus()"
       class="action-btn prev"
       (click)="moveToStatus(getPrevStatus()!, $event)"
       [title]="'Verschieben zu: ' + statusLabels[getPrevStatus()!]"
     >
       ← {{ statusLabels[getPrevStatus()!] }}
     </button>
-    <button 
-      *ngIf="getNextStatus()" 
+
+    <!-- For "zu_erledigen" tasks: show both "in progress" and "done" options -->
+    <ng-container *ngIf="task.status === 'zu_erledigen'">
+      <button
+        class="action-btn next"
+        (click)="moveToStatus('mach_ich_gerade', $event)"
+        title="Verschieben zu: Mach ich gerade"
+      >
+        {{ statusLabels['mach_ich_gerade'] }} →
+      </button>
+      <button
+        class="action-btn done"
+        (click)="moveToStatus('erledigt', $event)"
+        title="Direkt erledigen"
+      >
+        {{ statusLabels['erledigt'] }} ✓
+      </button>
+    </ng-container>
+
+    <!-- For other statuses: show only next status button -->
+    <button
+      *ngIf="task.status !== 'zu_erledigen' && getNextStatus()"
       class="action-btn next"
       (click)="moveToStatus(getNextStatus()!, $event)"
       [title]="'Verschieben zu: ' + statusLabels[getNextStatus()!]"
